@@ -27,7 +27,7 @@ backend/
 ## Requisitos
 - Python 3.8+
 - FastAPI
-- (Opcional) Librerías para scrapping: BeautifulSoup, requests, etc.
+- Librerías para scrapping: BeautifulSoup, requests.
 
 ## Instalación recomendada
 
