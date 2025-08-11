@@ -54,7 +54,7 @@ backend/
 ## Ejecución
 
 ```powershell
-uvicorn app.main:app --reload
+fastapi dev ./app/main.py
 ```
 
 ## Notas
