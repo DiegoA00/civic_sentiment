@@ -19,13 +19,11 @@ app.include_router(news.router)
 @app.get("/")
 async def root():
     messages = scrape_website("https://www.eluniverso.com/")
-    print(type(messages))
 
-    # Extract text from each headline and clean it
     cleaned_headlines = [
-        h.get_text(strip=True)  # Get text and remove whitespace
+        h.get_text(strip=True)
         for h in messages
-        if h.get_text(strip=True)  # Only include non-empty headlines
+        if h.get_text(strip=True)
     ]
 
     return {"message": cleaned_headlines}
