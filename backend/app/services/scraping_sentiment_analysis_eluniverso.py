@@ -42,12 +42,13 @@ def scrape_website(url):
         print(f'An unexpected error ocurred: {e}')
         return None
 
-url = 'https://www.eluniverso.com/'
+if __name__ == "__main__":
+    url = 'https://www.eluniverso.com/'
 
-headlines = scrape_website(url)
+    headlines = scrape_website(url)
 
-if headlines:
-    for headline in headlines:
-        headline_stripped = headline.text.strip()
-        label = analyze_headline(headline_stripped)
-        print(f'Headline: {headline_stripped} Label: {label}')
+    if headlines:
+        for headline in headlines:
+            headline_stripped = headline.text.strip()
+            label = analyze_headline(headline_stripped)
+            print(f'Headline: {headline_stripped} Label: {label}')
