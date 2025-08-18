@@ -10,7 +10,7 @@ def scrape_headlines(url: str):
     response = requests.get(url)
     response.raise_for_status()
     soup = BeautifulSoup(response.text, 'html.parser')
-    headlines_elements = soup.find_all('h2')  # or other tags depending on the site
+    headlines_elements = soup.find_all('h3')  # or other tags depending on the site
 
     results = []
     for elem in headlines_elements:

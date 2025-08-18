@@ -2,7 +2,7 @@ import os
 import requests
 from bs4 import BeautifulSoup
 from transformers import pipeline
-import tensorflow as tf
+# import tensorflow as tf
 
 # # Suppress all TensorFlow logs
 # os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
