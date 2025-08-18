@@ -25,7 +25,7 @@ backend/
 - **app/models/**: Definición de modelos de datos y esquemas.
 
 ## Requisitos
-- Python 3.8+
+- Para que la aplicación funcione correctamente, necesitas tener instalado Python 3.9 o una versión superior (hasta 3.12).
 - FastAPI
 - Librerías para scrapping: BeautifulSoup, requests.
 
