@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.routers import news
 from app.routers.elcomercio import router as elcomercio_router
-from .services.scraping_sentiment_analysis_eluniverso import scrape_website
+from .services.scraping_sentiment_analysis_eluniverso import analyzed_results
 
 app = FastAPI(title="News Sentiment API")
 
@@ -20,12 +20,5 @@ app.include_router(elcomercio_router)
 
 @app.get("/")
 async def root():
-    messages = scrape_website("https://www.eluniverso.com/")
-
-    cleaned_headlines = [
-        h.get_text(strip=True)
-        for h in messages
-        if h.get_text(strip=True)
-    ]
-
-    return {"message": cleaned_headlines}
+    analyzed_headlines = analyzed_results("https://www.eluniverso.com/", "El Universo")
+    return analyzed_headlines

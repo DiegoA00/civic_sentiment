@@ -28,7 +28,12 @@ def scrape_website(url):
         headlines = soup.find_all('h2')
 
         if headlines:
-            return headlines
+            cleaned_headlines = [
+            h.get_text(strip=True)
+            for h in headlines
+            if h.get_text(strip=True)
+        ]
+            return cleaned_headlines
         
         else:
             print('Error, could not find headline')
@@ -41,14 +46,19 @@ def scrape_website(url):
     except Exception as e:
         print(f'An unexpected error ocurred: {e}')
         return None
+    
+def analyzed_results(url: str, newspaper_name: str) -> list[dict]:
+    """Return headlines with sentiment label and newspaper name."""
+    headlines = scrape_website(url)
+    results = []
+    for hl in headlines:
+        label = analyze_headline(hl)
+        results.append({
+            'headline': hl,
+            'label': label,
+            'newspaper': newspaper_name
+        })
+    return results
 
 if __name__ == "__main__":
     url = 'https://www.eluniverso.com/'
-
-    headlines = scrape_website(url)
-
-    if headlines:
-        for headline in headlines:
-            headline_stripped = headline.text.strip()
-            label = analyze_headline(headline_stripped)
-            print(f'Headline: {headline_stripped} Label: {label}')

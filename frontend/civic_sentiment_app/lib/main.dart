@@ -13,9 +13,29 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       home: Scaffold(
-        appBar: AppBar(title: const Text('News Headlines')),
+        appBar: AppBar(title: const Text('Civic Sentiment')),
         body: const HeadlineList(),
       ),
+    );
+  }
+}
+
+class HeadlineSentiment {
+  final String headline;
+  final String label;
+  final String newspaper;
+
+  HeadlineSentiment({
+    required this.headline,
+    required this.label,
+    required this.newspaper,
+  });
+
+  factory HeadlineSentiment.fromJson(Map<String, dynamic> json) {
+    return HeadlineSentiment(
+      headline: json['headline'],
+      label: json['label'],
+      newspaper: json['newspaper'],
     );
   }
 }
@@ -28,7 +48,7 @@ class HeadlineList extends StatefulWidget {
 }
 
 class _HeadlineListState extends State<HeadlineList> {
-  List<String> headlines = [];
+  List<HeadlineSentiment> headlines = [];
   bool isLoading = true;
   String error = '';
 
@@ -40,13 +60,14 @@ class _HeadlineListState extends State<HeadlineList> {
 
   Future<void> fetchHeadlines() async {
     try {
-      // Use your FastAPI server URL (localhost works for web)
       final response = await http.get(Uri.parse('http://localhost:8000/'));
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
+        final List<dynamic> data = jsonDecode(response.body);
         setState(() {
-          headlines = List<String>.from(data['message']);
+          headlines = data
+              .map((item) => HeadlineSentiment.fromJson(item))
+              .toList();
           isLoading = false;
         });
       } else {
@@ -70,10 +91,15 @@ class _HeadlineListState extends State<HeadlineList> {
       return Center(child: Text(error));
     }
 
-    return ListView(
-      children: [
-        for (final headline in headlines) ListTile(title: Text(headline)),
-      ],
+    return ListView.builder(
+      itemCount: headlines.length,
+      itemBuilder: (context, index) {
+        final item = headlines[index];
+        return ListTile(
+          title: Text(item.headline),
+          subtitle: Text('${item.label} • ${item.newspaper}'),
+        );
+      },
     );
   }
 }
