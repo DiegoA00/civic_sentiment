@@ -8,20 +8,7 @@ def main():
     # Crear instancia del servicio
     service = PrimiciasService()
     
-    # Ejemplo 1: Obtener títulos principales
-    print("=== TÍTULOS PRINCIPALES DE PRIMICIAS ===")
-    main_titles = service.get_titles()
-    print(f"Total de títulos: {main_titles.total_count}")
-    
-    for title in main_titles.titles[:5]:  # Mostrar solo los primeros 5
-        print(f"- {title.text}")
-        if title.sentiment:
-            print(f"  Sentimiento: {title.sentiment.label.value} "
-                  f"({title.sentiment.score:.2f})")
-    
-    print("\n" + "="*60 + "\n")
-    
-    # Ejemplo 2: Búsqueda por término (equivalente al script original)
+    # Ejemplo 1: Búsqueda por término (equivalente al script original)
     search_term = "Obras"
     print(f"=== BÚSQUEDA POR TÉRMINO: {search_term} ===")
     search_results = service.search_by_term(search_term)
@@ -35,7 +22,7 @@ def main():
     
     print("\n" + "="*60 + "\n")
     
-    # Ejemplo 3: Análisis detallado con citas (funcionalidad original completa)
+    # Ejemplo 2: Análisis detallado con citas (funcionalidad original completa)
     print(f"=== ANÁLISIS DETALLADO: {search_term} ===")
     detailed_analysis = service.get_detailed_analysis(search_term)
     

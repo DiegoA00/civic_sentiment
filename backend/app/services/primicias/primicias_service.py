@@ -1,44 +1,18 @@
 import requests
 from bs4 import BeautifulSoup
-from typing import List, Optional
-from ..shared.interfaces import TitleScraper
-from ...models.shared.title import Title, SentimentResult
+from typing import List
+from ...models.shared.title import Title
 from ..shared.sentiment_analyzer import TransformersSentimentAnalyzer
 
-class PrimiciasScraper(TitleScraper):
+
+class PrimiciasScraper:
     def __init__(self):
         self.base_url = "https://www.primicias.ec"
         self.sentiment_analyzer = TransformersSentimentAnalyzer()
     
-    def extract_titles(self, url: str = None) -> List[Title]:
-        """Extract titles from main page"""
-        if url is None:
-            url = self.base_url
-            
-        try:
-            response = requests.get(url)
-            response.raise_for_status()
-            
-            soup = BeautifulSoup(response.content, "html.parser")
-            titles = []
-            
-            articulos = soup.find_all("article", class_="c-article")
-            for i, articulo in enumerate(articulos):
-                tag = articulo.find("h2", class_="c-article__title")
-                if tag:
-                    title_text = tag.text.strip()
-                    sentiment = self.sentiment_analyzer.analyze_sentiment(title_text)
-                    titles.append(Title(
-                        text=title_text,
-                        position=i,
-                        sentiment=sentiment
-                    ))
-            
-            return titles
-            
-        except Exception as e:
-            print(f"Error extracting titles: {e}")
-            return []
+    def _title_contains_search_term(self, title: str, search_term: str) -> bool:
+        """Check if title contains search term (case insensitive)"""
+        return search_term.lower() in title.lower()
     
     def search_titles(self, search_term: str) -> List[Title]:
         """Search articles by term and extract titles with sentiment analysis"""
@@ -60,19 +34,26 @@ class PrimiciasScraper(TitleScraper):
                 articulos = soup.find_all("article", class_="c-article")
                 if not articulos:
                     break
-                    
+                
+                # Only analyze titles that contain the search term
+                matching_articles = 0
                 for articulo in articulos:
                     tag = articulo.find("h2", class_="c-article__title")
                     if tag:
                         title_text = tag.text.strip()
-                        sentiment = self.sentiment_analyzer.analyze_sentiment(title_text)
-                        titles.append(Title(
-                            text=title_text,
-                            position=len(titles),
-                            sentiment=sentiment
-                        ))
+                        # Only analyze titles that match the search term
+                        if self._title_contains_search_term(title_text, search_term):
+                            sentiment = self.sentiment_analyzer.analyze_sentiment(
+                                title_text
+                            )
+                            titles.append(Title(
+                                text=title_text,
+                                position=len(titles),
+                                sentiment=sentiment
+                            ))
+                            matching_articles += 1
                 
-                print(f"Página {pagina} procesada - {len(articulos)} artículos encontrados")
+                print(f"Página {pagina} procesada - {matching_articles} de {len(articulos)} artículos coinciden con '{search_term}'")
                 pagina += 1
                 
             except Exception as e:
@@ -100,19 +81,25 @@ class PrimiciasScraper(TitleScraper):
                 articulos = soup.find_all("article", class_="c-article")
                 if not articulos:
                     break
-                    
+                
+                # Only process articles whose titles contain the search term
+                matching_articles = 0
                 for articulo in articulos:
                     tag = articulo.find("h2", class_="c-article__title")
                     if tag:
-                        link = tag.find("a")["href"]
-                        resultado.append({
-                            "titulo": tag.text.strip(),
-                            "enlace": f"{self.base_url}{link}",
-                            "citas": [],
-                            "emociones": []
-                        })
+                        title_text = tag.text.strip()
+                        # Only process articles that match the search term
+                        if self._title_contains_search_term(title_text, search_term):
+                            link = tag.find("a")["href"]
+                            resultado.append({
+                                "titulo": title_text,
+                                "enlace": f"{self.base_url}{link}",
+                                "citas": [],
+                                "emociones": []
+                            })
+                            matching_articles += 1
                 
-                print(f"Página {pagina} procesada.")
+                print(f"Página {pagina} procesada - {matching_articles} artículos coinciden con '{search_term}'.")
                 pagina += 1
                 
             except Exception as e:

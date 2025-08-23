@@ -7,16 +7,6 @@ class PrimiciasService:
     def __init__(self):
         self.scraper = PrimiciasScraper()
     
-    def get_titles(self) -> TitlesResponse:
-        """Get main page titles"""
-        titles = self.scraper.extract_titles()
-        return TitlesResponse(
-            url="https://www.primicias.ec",
-            titles=titles,
-            total_count=len(titles),
-            source="Primicias"
-        )
-    
     def search_by_term(self, search_term: str) -> TitlesResponse:
         """Search articles by term"""
         titles = self.scraper.search_titles(search_term)
