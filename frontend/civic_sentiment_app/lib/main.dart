@@ -106,16 +106,22 @@ class _DashboardPageState extends State<DashboardPage> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const SizedBox(height: 16),
-                        Container(key: _titlesKey, child: SentimentPie(counts: titleCounts, title: 'Sentimiento en titulares')),
+                        Container(
+                          key: _titlesKey,
+                          child: SentimentPie(counts: titleCounts, title: 'Sentimiento en titulares — Política (La Hora)'),
+                        ),
                         const SizedBox(height: 24),
-                        Container(key: _contentsKey, child: SentimentPie(counts: contentCounts, title: 'Sentimiento en contenidos (artículos)')),
+                        Container(
+                          key: _contentsKey,
+                          child: SentimentPie(counts: contentCounts, title: 'Sentimiento en contenidos (artículos) — Política (La Hora)'),
+                        ),
                         const SizedBox(height: 24),
                         Container(
                           key: _keywordsKey,
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text('Palabras por sentimiento', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+                              const Text('Palabras por sentimiento — Política (La Hora)', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
                               const SizedBox(height: 12),
                               KeywordBars(title: 'Positivas', keywords: positiveKeywords),
                               const SizedBox(height: 12),
