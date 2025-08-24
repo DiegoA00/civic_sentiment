@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.routers import news
 from app.routers.elcomercio import router as elcomercio_router
 from app.routers.primicias.primicias_router import router as primicias_router
+from app.routers.lahora import router as lahora_router
 from .services.scraping_sentiment_analysis_eluniverso import analyzed_results
 
 app = FastAPI(title="News Sentiment API")
@@ -19,6 +20,7 @@ app.add_middleware(
 app.include_router(news.router)
 app.include_router(elcomercio_router)
 app.include_router(primicias_router)
+app.include_router(lahora_router)
 
 @app.get("/")
 async def root():
