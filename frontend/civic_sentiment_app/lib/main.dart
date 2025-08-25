@@ -34,13 +34,25 @@ class _DashboardPageState extends State<DashboardPage> {
   final api = ApiService(baseUrl: 'http://localhost:8000');
   bool loading = true;
   String? error;
+  
+  // La Hora data
   Map<String, int> titleCounts = {'POSITIVE': 0, 'NEGATIVE': 0, 'NEUTRAL': 0};
   Map<String, int> contentCounts = {'POSITIVE': 0, 'NEGATIVE': 0, 'NEUTRAL': 0};
   List<dynamic> positiveKeywords = [];
   List<dynamic> negativeKeywords = [];
+  
+  // Primicias data
+  Map<String, int> primiciasTitleCounts = {'POSITIVE': 0, 'NEGATIVE': 0, 'NEUTRAL': 0};
+  Map<String, int> primiciasContentCounts = {'POSITIVE': 0, 'NEGATIVE': 0, 'NEUTRAL': 0};
+  List<dynamic> primiciasPositiveKeywords = [];
+  List<dynamic> primiciasNegativeKeywords = [];
+  
   final _titlesKey = GlobalKey();
   final _contentsKey = GlobalKey();
   final _keywordsKey = GlobalKey();
+  final _primiciasTitlesKey = GlobalKey();
+  final _primiciasContentsKey = GlobalKey();
+  final _primiciasKeywordsKey = GlobalKey();
   final _scrollController = ScrollController();
 
   @override
@@ -55,14 +67,47 @@ class _DashboardPageState extends State<DashboardPage> {
       error = null;
     });
     try {
+      // Load La Hora data
       final titles = await api.fetchTitles(pages: 1);
       final contents = await api.fetchContents(pages: 1);
       final keywords = await api.fetchKeywords(pages: 1);
+      
+      // Load Primicias data with error handling
+      List<Map<String, dynamic>> primiciasTitles = [];
+      List<Map<String, dynamic>> primiciasAnalysis = [];
+      Map<String, dynamic> primiciasKeywords = {'positive': [], 'negative': []};
+      
+      try {
+        primiciasTitles = await api.fetchPrimiciasTitles();
+        primiciasKeywords = api.fetchPrimiciasKeywords(primiciasTitles);
+      } catch (e) {
+        print('Error loading Primicias titles: $e');
+      }
+      
+      try {
+        primiciasAnalysis = await api.fetchPrimiciasAnalysis();
+      } catch (e) {
+        print('Error loading Primicias analysis (usando solo títulos): $e');
+        // Si falla el análisis detallado, usar datos de títulos para contenidos
+        primiciasAnalysis = [];
+      }
+      
       setState(() {
+        // La Hora data
         titleCounts = api.computeSentimentCountsFromTitles(titles);
         contentCounts = api.computeSentimentCountsFromContents(contents);
         positiveKeywords = keywords['positive'] ?? [];
         negativeKeywords = keywords['negative'] ?? [];
+        
+        // Primicias data
+        primiciasTitleCounts = api.computeSentimentCountsFromPrimicias(primiciasTitles);
+        // Si no hay análisis detallado, usar los datos de títulos para contenidos
+        primiciasContentCounts = primiciasAnalysis.isNotEmpty 
+            ? api.computeSentimentCountsFromPrimiciasAnalysis(primiciasAnalysis)
+            : api.computeSentimentCountsFromPrimicias(primiciasTitles);
+        primiciasPositiveKeywords = primiciasKeywords['positive'] ?? [];
+        primiciasNegativeKeywords = primiciasKeywords['negative'] ?? [];
+        
         loading = false;
       });
     } catch (e) {
@@ -88,9 +133,12 @@ class _DashboardPageState extends State<DashboardPage> {
         elevation: 1,
         title: const Text('Civic Sentiment', style: TextStyle(color: Colors.black)),
         actions: [
-          TextButton(onPressed: () => _scrollTo(_titlesKey), style: navButtonStyle, child: const Text('Titulares')),
-          TextButton(onPressed: () => _scrollTo(_contentsKey), style: navButtonStyle, child: const Text('Contenidos')),
-          TextButton(onPressed: () => _scrollTo(_keywordsKey), style: navButtonStyle, child: const Text('Palabras')),
+          TextButton(onPressed: () => _scrollTo(_titlesKey), style: navButtonStyle, child: const Text('La Hora - Titulares')),
+          TextButton(onPressed: () => _scrollTo(_contentsKey), style: navButtonStyle, child: const Text('La Hora - Contenidos')),
+          TextButton(onPressed: () => _scrollTo(_keywordsKey), style: navButtonStyle, child: const Text('La Hora - Palabras')),
+          TextButton(onPressed: () => _scrollTo(_primiciasTitlesKey), style: navButtonStyle, child: const Text('Primicias - Titulares')),
+          TextButton(onPressed: () => _scrollTo(_primiciasContentsKey), style: navButtonStyle, child: const Text('Primicias - Contenidos')),
+          TextButton(onPressed: () => _scrollTo(_primiciasKeywordsKey), style: navButtonStyle, child: const Text('Primicias - Palabras')),
         ],
       ),
       body: RefreshIndicator(
@@ -106,6 +154,7 @@ class _DashboardPageState extends State<DashboardPage> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const SizedBox(height: 16),
+                        // LA HORA SECTION
                         Container(
                           key: _titlesKey,
                           child: SentimentPie(counts: titleCounts, title: 'Sentimiento en titulares — Política (La Hora)'),
@@ -126,6 +175,34 @@ class _DashboardPageState extends State<DashboardPage> {
                               KeywordBars(title: 'Positivas', keywords: positiveKeywords),
                               const SizedBox(height: 12),
                               KeywordBars(title: 'Negativas', keywords: negativeKeywords),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 40),
+                        
+                        // PRIMICIAS SECTION
+                        const Divider(thickness: 2, color: Colors.grey),
+                        const SizedBox(height: 20),
+                        Container(
+                          key: _primiciasTitlesKey,
+                          child: SentimentPie(counts: primiciasTitleCounts, title: 'Sentimiento en titulares — Economía (Primicias)'),
+                        ),
+                        const SizedBox(height: 24),
+                        Container(
+                          key: _primiciasContentsKey,
+                          child: SentimentPie(counts: primiciasContentCounts, title: 'Sentimiento en contenidos — Economía (Primicias)'),
+                        ),
+                        const SizedBox(height: 24),
+                        Container(
+                          key: _primiciasKeywordsKey,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text('Palabras por sentimiento — Economía (Primicias)', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+                              const SizedBox(height: 12),
+                              KeywordBars(title: 'Positivas', keywords: primiciasPositiveKeywords),
+                              const SizedBox(height: 12),
+                              KeywordBars(title: 'Negativas', keywords: primiciasNegativeKeywords),
                             ],
                           ),
                         ),

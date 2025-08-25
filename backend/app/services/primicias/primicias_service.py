@@ -9,7 +9,7 @@ class PrimiciasScraper:
     def __init__(self):
         self.base_url = "https://www.primicias.ec"
         self.economia_section = "economia"
-        self.max_pages = 3  # Máximo número de páginas a revisar
+        self.max_pages = 2  # Reducido a 2 páginas para mejor rendimiento
         self.sentiment_analyzer = TransformersSentimentAnalyzer()
     
     def get_economia_articles_with_sentiment(self) -> List[dict]:
