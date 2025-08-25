@@ -8,105 +8,58 @@ from ..shared.sentiment_analyzer import TransformersSentimentAnalyzer
 class PrimiciasScraper:
     def __init__(self):
         self.base_url = "https://www.primicias.ec"
+        self.economia_section = "economia"
+        self.max_pages = 3  # Máximo número de páginas a revisar
         self.sentiment_analyzer = TransformersSentimentAnalyzer()
     
-    def _title_contains_search_term(self, title: str, search_term: str) -> bool:
-        """Check if title contains search term (case insensitive)"""
-        return search_term.lower() in title.lower()
-    
-    def search_titles(self, search_term: str) -> List[Title]:
-        """Search articles by term and extract titles with sentiment analysis"""
-        titles = []
-        pagina = 1
-        
-        while True:
-            try:
-                url = f"{self.base_url}/buscador/?q={search_term}&page={pagina}"
-                response = requests.get(url)
-                response.raise_for_status()
-                
-                soup = BeautifulSoup(response.content, "html.parser")
-                
-                # Check if there are more pages
-                if not soup.find("li", class_="active c-pagination__page"):
-                    break
-                
-                articulos = soup.find_all("article", class_="c-article")
-                if not articulos:
-                    break
-                
-                # Only analyze titles that contain the search term
-                matching_articles = 0
-                for articulo in articulos:
-                    tag = articulo.find("h2", class_="c-article__title")
-                    if tag:
-                        title_text = tag.text.strip()
-                        # Only analyze titles that match the search term
-                        if self._title_contains_search_term(title_text, search_term):
-                            sentiment = self.sentiment_analyzer.analyze_sentiment(
-                                title_text
-                            )
-                            titles.append(Title(
-                                text=title_text,
-                                position=len(titles),
-                                sentiment=sentiment
-                            ))
-                            matching_articles += 1
-                
-                print(f"Página {pagina} procesada - {matching_articles} de {len(articulos)} artículos coinciden con '{search_term}'")
-                pagina += 1
-                
-            except Exception as e:
-                print(f"Error en página {pagina}: {e}")
-                break
-        
-        return titles
-    
-    def get_article_quotes_with_sentiment(self, search_term: str) -> List[dict]:
-        """Get articles with quotes and sentiment analysis (original functionality)"""
+    def get_economia_articles_with_sentiment(self) -> List[dict]:
+        """Get economics articles with titles and content sentiment analysis"""
         pagina = 1
         resultado = []
         
-        while True:
+        while pagina <= self.max_pages:
             try:
-                url = f"{self.base_url}/buscador/?q={search_term}&page={pagina}"
+                url = f"{self.base_url}/{self.economia_section}/{pagina}/"
                 response = requests.get(url)
                 response.raise_for_status()
                 
                 soup = BeautifulSoup(response.content, "html.parser")
                 
-                if not soup.find("li", class_="active c-pagination__page"):
-                    break
-                
                 articulos = soup.find_all("article", class_="c-article")
                 if not articulos:
+                    print(f"No se encontraron artículos en página {pagina}. Fin del scraping.")
                     break
                 
-                # Only process articles whose titles contain the search term
-                matching_articles = 0
+                # Process all articles on the page
                 for articulo in articulos:
                     tag = articulo.find("h2", class_="c-article__title")
                     if tag:
                         title_text = tag.text.strip()
-                        # Only process articles that match the search term
-                        if self._title_contains_search_term(title_text, search_term):
-                            link = tag.find("a")["href"]
-                            resultado.append({
-                                "titulo": title_text,
-                                "enlace": f"{self.base_url}{link}",
-                                "citas": [],
-                                "emociones": []
-                            })
-                            matching_articles += 1
+                        link = tag.find("a")["href"]
+                        
+                        # Analyze title sentiment
+                        title_sentiment = self.sentiment_analyzer.analyze_sentiment(title_text)
+                        
+                        resultado.append({
+                            "titulo": title_text,
+                            "enlace": f"{self.base_url}{link}",
+                            "titulo_sentimiento": {
+                                "label": title_sentiment.label.value,
+                                "score": title_sentiment.score
+                            },
+                            "citas": [],
+                            "emociones": [],
+                            "pagina": pagina
+                        })
                 
-                print(f"Página {pagina} procesada - {matching_articles} artículos coinciden con '{search_term}'.")
+                print(f"Página {pagina} procesada - {len(articulos)} artículos de economía encontrados")
                 pagina += 1
                 
             except Exception as e:
                 print(f"Error en página {pagina}: {e}")
                 break
         
-        # Process each article to extract quotes
+        # Process each article to extract quotes and analyze content
         for i, item in enumerate(resultado):
             try:
                 response = requests.get(item["enlace"])
@@ -119,8 +72,8 @@ class PrimiciasScraper:
                 emociones = []
                 
                 for parrafo in contenido:
-                    texto = parrafo.text
-                    if '\"' in texto:
+                    texto = parrafo.text.strip()
+                    if texto and '\"' in texto:
                         citas.append(texto)
                         sentiment_result = self.sentiment_analyzer.analyze_sentiment(texto)
                         emociones.append({
@@ -131,10 +84,49 @@ class PrimiciasScraper:
                 resultado[i]["citas"] = citas
                 resultado[i]["emociones"] = emociones
                 
-                print(f"Artículo {i+1}/{len(resultado)} procesado.")
+                print(f"Artículo {i+1}/{len(resultado)} procesado - {len(citas)} citas encontradas.")
                 
             except Exception as e:
                 print(f"Error procesando artículo {i}: {e}")
                 continue
         
         return resultado
+    
+    def get_economia_titles_with_sentiment(self) -> List[Title]:
+        """Get economics article titles with sentiment analysis only"""
+        pagina = 1
+        titles = []
+        
+        while pagina <= self.max_pages:
+            try:
+                url = f"{self.base_url}/{self.economia_section}/{pagina}/"
+                response = requests.get(url)
+                response.raise_for_status()
+                
+                soup = BeautifulSoup(response.content, "html.parser")
+                
+                articulos = soup.find_all("article", class_="c-article")
+                if not articulos:
+                    print(f"No se encontraron artículos en página {pagina}. Fin del scraping.")
+                    break
+                
+                # Process all articles on the page
+                for articulo in articulos:
+                    tag = articulo.find("h2", class_="c-article__title")
+                    if tag:
+                        title_text = tag.text.strip()
+                        sentiment = self.sentiment_analyzer.analyze_sentiment(title_text)
+                        titles.append(Title(
+                            text=title_text,
+                            position=len(titles),
+                            sentiment=sentiment
+                        ))
+                
+                print(f"Página {pagina} procesada - {len(articulos)} títulos de economía analizados")
+                pagina += 1
+                
+            except Exception as e:
+                print(f"Error en página {pagina}: {e}")
+                break
+        
+        return titles

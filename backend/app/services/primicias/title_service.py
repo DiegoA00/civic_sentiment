@@ -1,22 +1,22 @@
 from typing import List
 from .primicias_service import PrimiciasScraper
-from ...models.shared.title import Title, TitlesResponse
+from ...models.shared.title import TitlesResponse
 
 
 class PrimiciasService:
     def __init__(self):
         self.scraper = PrimiciasScraper()
     
-    def search_by_term(self, search_term: str) -> TitlesResponse:
-        """Search articles by term"""
-        titles = self.scraper.search_titles(search_term)
+    def get_economia_titles(self) -> TitlesResponse:
+        """Get economics section titles with sentiment analysis"""
+        titles = self.scraper.get_economia_titles_with_sentiment()
         return TitlesResponse(
-            url=f"https://www.primicias.ec/buscador/?q={search_term}",
+            url="https://www.primicias.ec/economia/",
             titles=titles,
             total_count=len(titles),
-            source="Primicias"
+            source="Primicias - Economía"
         )
     
-    def get_detailed_analysis(self, search_term: str) -> List[dict]:
-        """Get detailed analysis with quotes and sentiment"""
-        return self.scraper.get_article_quotes_with_sentiment(search_term)
+    def get_economia_detailed_analysis(self) -> List[dict]:
+        """Get detailed economics analysis with titles, quotes and sentiment"""
+        return self.scraper.get_economia_articles_with_sentiment()
