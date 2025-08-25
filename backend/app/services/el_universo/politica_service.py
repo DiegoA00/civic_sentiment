@@ -5,6 +5,10 @@ from ...models.shared import Title, TitlesResponse, ScraperConfig
 from ..shared.sentiment_analyzer import TransformersSentimentAnalyzer
 from collections import Counter
 import re
+from urllib.parse import urljoin
+
+URL = "https://www.eluniverso.com/larevista/tecnologia/"
+
 
 SPANISH_STOPWORDS = {
     "de", "la", "que", "el", "en", "y", "a", "los", "del", "se", "las", "por", "un", "para", "con", "no", "una",
@@ -29,6 +33,7 @@ class ElUniversoTecnologiaService:
         self.session = requests.Session()
         self.session.headers.update(self.config.headers)
         self.sentiment_analyzer = TransformersSentimentAnalyzer()
+        self.base_url = "https://www.eluniverso.com"
 
     def get_titles_and_contents(self, num_pages: int) -> List[Dict]:
         results = []
@@ -152,3 +157,125 @@ class ElUniversoTecnologiaService:
             "positive": Counter(positive_words).most_common(20),
             "negative": Counter(negative_words).most_common(20)
         }
+    
+    def get_economia_detailed_analysis(self) -> List[dict]:
+        """Get detailed economics analysis with titles, quotes and sentiment"""
+        resultado = []
+        
+        try:
+            url = "https://www.eluniverso.com/larevista/tecnologia/"
+            response = requests.get(url)
+            response.raise_for_status()
+            
+            soup = BeautifulSoup(response.content, "html.parser")
+            
+            articulos = soup.select("ul.feed li.relative a.no-underline")
+            if not articulos:
+                print(f"No se encontraron items. Fin del scraping.")
+                
+            
+            # Process all articles on the page
+            for articulo in articulos:
+                
+                title_text = articulo.get_text(strip=True)
+                link = urljoin(self.base_url, articulo["href"])
+                
+                title_sentiment = self.sentiment_analyzer.analyze_sentiment(title_text)
+                
+                resultado.append({
+                    "titulo": title_text,
+                    "enlace": link,
+                    "titulo_sentimiento": {
+                        "label": title_sentiment.label.value,
+                        "score": title_sentiment.score
+                    },
+                    "citas": [],
+                    "emociones": [],
+                    "pagina": 1
+                })
+            
+            print(f"Página procesada - {len(articulos)} artículos de economía encontrados")
+            
+        except Exception as e:
+            print(f"Error en página: {e}")
+            
+        for i, item in enumerate(resultado):
+            try:
+                response = requests.get(item["enlace"])
+                response.raise_for_status()
+                
+                soup = BeautifulSoup(response.content, "html.parser")
+                contenido = soup.select("section.article-body p.prose-text")
+                
+                citas = []
+                emociones = []
+                
+                for parrafo in contenido:
+                    texto = parrafo.text.strip()
+                    if texto and '\"' in texto:
+                        citas.append(texto)
+                        sentiment_result = self.sentiment_analyzer.analyze_sentiment(texto)
+                        emociones.append({
+                            "label": sentiment_result.label.value,
+                            "score": sentiment_result.score
+                        })
+                
+                resultado[i]["citas"] = citas
+                resultado[i]["emociones"] = emociones
+                
+                print(f"Artículo {i+1}/{len(resultado)} procesado - {len(citas)} citas encontradas.")
+                
+            except Exception as e:
+                print(f"Error procesando artículo {i}: {e}")
+                continue
+        
+        return resultado
+    
+
+
+    
+
+
+
+    def get_economia_titles(self) -> TitlesResponse:
+        """Get economics section titles with sentiment analysis"""
+        pagina = 1
+        titles = []
+        
+        
+        try:
+            url = "https://www.eluniverso.com/larevista/tecnologia/"
+            response = requests.get(url)
+            response.raise_for_status()
+            
+            soup = BeautifulSoup(response.content, "html.parser")
+            
+            articulos = soup.find_all('h2')
+            if not articulos:
+                print(f"No se encontraron artículos en página {pagina}. Fin del scraping.")
+                
+            
+            # Process all articles on the page
+            for articulo in articulos:
+                
+                title_text = articulo.get_text(strip=True)
+                sentiment = self.sentiment_analyzer.analyze_sentiment(title_text)
+                titles.append(Title(
+                    text=title_text,
+                    position=len(titles),
+                    sentiment=sentiment
+                ))
+            
+            print(f"Página {pagina} procesada - {len(articulos)} títulos de economía analizados")
+            pagina += 1
+            
+        except Exception as e:
+            print(f"Error en página {pagina}: {e}")       
+        
+
+        return TitlesResponse(
+            url="https://www.eluniverso.com/larevista/tecnologia/",
+            titles=titles,
+            total_count=len(titles),
+            source="El Universo - Tecnologia"
+        )

@@ -12,8 +12,9 @@ class ApiService {
   final Map<String, String> lastFetchSource = {};
 
   Future<List<Map<String, dynamic>>> fetchTitles({int pages = 1}) async {
-    final uri = Uri.parse('$baseUrl/lahora/politica/titles-sentiment')
-        .replace(queryParameters: {'num_pages': pages.toString()});
+    final uri = Uri.parse(
+      '$baseUrl/lahora/politica/titles-sentiment',
+    ).replace(queryParameters: {'num_pages': pages.toString()});
     try {
       final respBody = await _get(uri);
       lastFetchSource['titles'] = 'backend';
@@ -27,8 +28,9 @@ class ApiService {
   }
 
   Future<List<Map<String, dynamic>>> fetchContents({int pages = 1}) async {
-    final uri = Uri.parse('$baseUrl/lahora/politica/content-sentiment')
-        .replace(queryParameters: {'num_pages': pages.toString()});
+    final uri = Uri.parse(
+      '$baseUrl/lahora/politica/content-sentiment',
+    ).replace(queryParameters: {'num_pages': pages.toString()});
     try {
       final respBody = await _get(uri);
       lastFetchSource['contents'] = 'backend';
@@ -43,10 +45,12 @@ class ApiService {
 
   Future<Map<String, dynamic>> fetchKeywords({int pages = 1}) async {
     final candidates = <Uri>[
-      Uri.parse('$baseUrl/lahora/politica/keywords-by-sentiment')
-          .replace(queryParameters: {'num_pages': pages.toString()}),
-      Uri.parse('$baseUrl/lahora/politica/keywords_by_sentiment')
-          .replace(queryParameters: {'num_pages': pages.toString()}),
+      Uri.parse(
+        '$baseUrl/lahora/politica/keywords-by-sentiment',
+      ).replace(queryParameters: {'num_pages': pages.toString()}),
+      Uri.parse(
+        '$baseUrl/lahora/politica/keywords_by_sentiment',
+      ).replace(queryParameters: {'num_pages': pages.toString()}),
     ];
 
     for (final uri in candidates) {
@@ -66,9 +70,52 @@ class ApiService {
       final negativeWords = <String>[];
 
       final stopwords = <String>{
-        'de','la','que','el','en','y','a','los','del','se','las','por','un','para','con','no','una',
-        'su','al','lo','como','más','pero','sus','o','este','sí','porque','esta','entre','cuando','muy',
-        'sin','sobre','también','me','hasta','hay','todo','uno','ni','otros','ese','eso','ante','ellos'
+        'de',
+        'la',
+        'que',
+        'el',
+        'en',
+        'y',
+        'a',
+        'los',
+        'del',
+        'se',
+        'las',
+        'por',
+        'un',
+        'para',
+        'con',
+        'no',
+        'una',
+        'su',
+        'al',
+        'lo',
+        'como',
+        'más',
+        'pero',
+        'sus',
+        'o',
+        'este',
+        'sí',
+        'porque',
+        'esta',
+        'entre',
+        'cuando',
+        'muy',
+        'sin',
+        'sobre',
+        'también',
+        'me',
+        'hasta',
+        'hay',
+        'todo',
+        'uno',
+        'ni',
+        'otros',
+        'ese',
+        'eso',
+        'ante',
+        'ellos',
       };
 
       final wordRe = RegExp(r'\w+', unicode: true);
@@ -81,12 +128,14 @@ class ApiService {
             .map((m) => m.group(0)!)
             .where((w) => !stopwords.contains(w))
             .toList();
-        if (sentiment.contains('POS')) positiveWords.addAll(words);
-        else if (sentiment.contains('NEG')) negativeWords.addAll(words);
+        if (sentiment.contains('POS'))
+          positiveWords.addAll(words);
+        else if (sentiment.contains('NEG'))
+          negativeWords.addAll(words);
       }
 
-      Map<String,int> countMap(List<String> words) {
-        final m = <String,int>{};
+      Map<String, int> countMap(List<String> words) {
+        final m = <String, int>{};
         for (final w in words) m[w] = (m[w] ?? 0) + 1;
         return m;
       }
@@ -94,8 +143,9 @@ class ApiService {
       final posCounts = countMap(positiveWords);
       final negCounts = countMap(negativeWords);
 
-      List<List<dynamic>> toListOfPairs(Map<String,int> m) {
-        final entries = m.entries.toList()..sort((a,b) => b.value.compareTo(a.value));
+      List<List<dynamic>> toListOfPairs(Map<String, int> m) {
+        final entries = m.entries.toList()
+          ..sort((a, b) => b.value.compareTo(a.value));
         return entries.map((e) => [e.key, e.value]).toList();
       }
 
@@ -106,7 +156,9 @@ class ApiService {
       };
     } catch (e) {
       lastFetchSource['keywords'] = 'error';
-      throw Exception('Failed to fetch keywords: tried ${candidates.length} endpoints and fallback failed: $e');
+      throw Exception(
+        'Failed to fetch keywords: tried ${candidates.length} endpoints and fallback failed: $e',
+      );
     }
   }
 
@@ -132,7 +184,9 @@ class ApiService {
       lastFetchSource['primicias_analysis'] = 'backend';
       final dynamic jsonBody = jsonDecode(respBody);
       if (jsonBody is List) {
-        return jsonBody.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+        return jsonBody
+            .map((e) => Map<String, dynamic>.from(e as Map))
+            .toList();
       }
       throw Exception('Expected analysis response to be a list.');
     } catch (e) {
@@ -141,15 +195,100 @@ class ApiService {
     }
   }
 
-  Map<String, dynamic> fetchPrimiciasKeywords(List<Map<String, dynamic>> titles) {
+  Future<List<Map<String, dynamic>>> fetchElUniversoTitles() async {
+    final uri = Uri.parse('$baseUrl/eluniverso/tecnologia/economia/titles');
+    try {
+      final respBody = await _get(uri);
+      lastFetchSource['eluniverso_titles'] = 'backend';
+      final dynamic jsonBody = jsonDecode(respBody);
+      final List<dynamic> rawList = _extractList(jsonBody, 'titles');
+      return rawList.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+    } catch (e) {
+      lastFetchSource['eluniverso_titles'] = 'error';
+      rethrow;
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> fetchElUniversoAnalysis() async {
+    final uri = Uri.parse('$baseUrl/eluniverso/tecnologia/economia/analysis');
+    try {
+      final respBody = await _get(uri);
+      lastFetchSource['eluniverso_analysis'] = 'backend';
+      final dynamic jsonBody = jsonDecode(respBody);
+      if (jsonBody is List) {
+        return jsonBody
+            .map((e) => Map<String, dynamic>.from(e as Map))
+            .toList();
+      }
+      throw Exception('Expected analysis response to be a list.');
+    } catch (e) {
+      lastFetchSource['eluniverso_analysis'] = 'error';
+      rethrow;
+    }
+  }
+
+  Map<String, dynamic> fetchPrimiciasKeywords(
+    List<Map<String, dynamic>> titles,
+  ) {
     final positiveWords = <String>[];
     final negativeWords = <String>[];
 
     final stopwords = <String>{
-      'de','la','que','el','en','y','a','los','del','se','las','por','un','para','con','no','una',
-      'su','al','lo','como','más','pero','sus','o','este','sí','porque','esta','entre','cuando','muy',
-      'sin','sobre','también','me','hasta','hay','todo','uno','ni','otros','ese','eso','ante','ellos',
-      'tommy','wright','corporación','favorita','supermaxi','ecuador','quito','economía','primicias'
+      'de',
+      'la',
+      'que',
+      'el',
+      'en',
+      'y',
+      'a',
+      'los',
+      'del',
+      'se',
+      'las',
+      'por',
+      'un',
+      'para',
+      'con',
+      'no',
+      'una',
+      'su',
+      'al',
+      'lo',
+      'como',
+      'más',
+      'pero',
+      'sus',
+      'o',
+      'este',
+      'sí',
+      'porque',
+      'esta',
+      'entre',
+      'cuando',
+      'muy',
+      'sin',
+      'sobre',
+      'también',
+      'me',
+      'hasta',
+      'hay',
+      'todo',
+      'uno',
+      'ni',
+      'otros',
+      'ese',
+      'eso',
+      'ante',
+      'ellos',
+      'tommy',
+      'wright',
+      'corporación',
+      'favorita',
+      'supermaxi',
+      'ecuador',
+      'quito',
+      'economía',
+      'primicias',
     };
 
     final wordRe = RegExp(r'\w+', unicode: true);
@@ -158,19 +297,21 @@ class ApiService {
       final text = (t['text'] ?? '').toString().toLowerCase();
       final sentimentObj = t['sentiment'] as Map<String, dynamic>?;
       final sentiment = (sentimentObj?['label'] ?? '').toString().toUpperCase();
-      
+
       final words = wordRe
           .allMatches(text)
           .map((m) => m.group(0)!)
           .where((w) => w.length > 3 && !stopwords.contains(w))
           .toList();
-      
-      if (sentiment.contains('POS')) positiveWords.addAll(words);
-      else if (sentiment.contains('NEG')) negativeWords.addAll(words);
+
+      if (sentiment.contains('POS'))
+        positiveWords.addAll(words);
+      else if (sentiment.contains('NEG'))
+        negativeWords.addAll(words);
     }
 
-    Map<String,int> countMap(List<String> words) {
-      final m = <String,int>{};
+    Map<String, int> countMap(List<String> words) {
+      final m = <String, int>{};
       for (final w in words) m[w] = (m[w] ?? 0) + 1;
       return m;
     }
@@ -178,8 +319,9 @@ class ApiService {
     final posCounts = countMap(positiveWords);
     final negCounts = countMap(negativeWords);
 
-    List<List<dynamic>> toListOfPairs(Map<String,int> m) {
-      final entries = m.entries.toList()..sort((a,b) => b.value.compareTo(a.value));
+    List<List<dynamic>> toListOfPairs(Map<String, int> m) {
+      final entries = m.entries.toList()
+        ..sort((a, b) => b.value.compareTo(a.value));
       return entries.take(10).map((e) => [e.key, e.value]).toList(); // Top 10
     }
 
@@ -189,32 +331,42 @@ class ApiService {
     };
   }
 
-  Map<String, int> computeSentimentCountsFromPrimicias(List<Map<String, dynamic>> titles) {
+  Map<String, int> computeSentimentCountsFromPrimicias(
+    List<Map<String, dynamic>> titles,
+  ) {
     final counts = {'POSITIVE': 0, 'NEGATIVE': 0, 'NEUTRAL': 0};
     for (final t in titles) {
       final sentimentObj = t['sentiment'] as Map<String, dynamic>?;
       final sentiment = (sentimentObj?['label'] ?? '').toString().toUpperCase();
-      
-      if (sentiment.contains('POS')) counts['POSITIVE'] = counts['POSITIVE']! + 1;
-      else if (sentiment.contains('NEG')) counts['NEGATIVE'] = counts['NEGATIVE']! + 1;
-      else counts['NEUTRAL'] = counts['NEUTRAL']! + 1;
+
+      if (sentiment.contains('POS'))
+        counts['POSITIVE'] = counts['POSITIVE']! + 1;
+      else if (sentiment.contains('NEG'))
+        counts['NEGATIVE'] = counts['NEGATIVE']! + 1;
+      else
+        counts['NEUTRAL'] = counts['NEUTRAL']! + 1;
     }
     return counts;
   }
 
-  Map<String, int> computeSentimentCountsFromPrimiciasAnalysis(List<Map<String, dynamic>> analysis) {
+  Map<String, int> computeSentimentCountsFromPrimiciasAnalysis(
+    List<Map<String, dynamic>> analysis,
+  ) {
     final counts = {'POSITIVE': 0, 'NEGATIVE': 0, 'NEUTRAL': 0};
     for (final item in analysis) {
       final citas = item['citas'] as List<dynamic>?;
       final emociones = item['emociones'] as List<dynamic>?;
-      
+
       if (citas != null && emociones != null) {
         for (final emocion in emociones) {
           if (emocion is Map<String, dynamic>) {
             final sentiment = (emocion['label'] ?? '').toString().toUpperCase();
-            if (sentiment.contains('POS')) counts['POSITIVE'] = counts['POSITIVE']! + 1;
-            else if (sentiment.contains('NEG')) counts['NEGATIVE'] = counts['NEGATIVE']! + 1;
-            else counts['NEUTRAL'] = counts['NEUTRAL']! + 1;
+            if (sentiment.contains('POS'))
+              counts['POSITIVE'] = counts['POSITIVE']! + 1;
+            else if (sentiment.contains('NEG'))
+              counts['NEGATIVE'] = counts['NEGATIVE']! + 1;
+            else
+              counts['NEUTRAL'] = counts['NEUTRAL']! + 1;
           }
         }
       }
@@ -228,7 +380,9 @@ class ApiService {
           .get(uri, headers: {'Accept': 'application/json'})
           .timeout(Duration(seconds: timeoutSeconds));
       if (response.statusCode != 200) {
-        throw Exception('HTTP ${response.statusCode} ${response.reasonPhrase}: ${response.body}');
+        throw Exception(
+          'HTTP ${response.statusCode} ${response.reasonPhrase}: ${response.body}',
+        );
       }
       return response.body;
     } catch (e) {
@@ -244,28 +398,40 @@ class ApiService {
     } else if (jsonBody is List) {
       return jsonBody;
     } else {
-      throw Exception('Unexpected JSON shape: expected map with "$keyName" or a list.');
+      throw Exception(
+        'Unexpected JSON shape: expected map with "$keyName" or a list.',
+      );
     }
   }
 
-  Map<String, int> computeSentimentCountsFromTitles(List<Map<String, dynamic>> titles) {
+  Map<String, int> computeSentimentCountsFromTitles(
+    List<Map<String, dynamic>> titles,
+  ) {
     final counts = {'POSITIVE': 0, 'NEGATIVE': 0, 'NEUTRAL': 0};
     for (final t in titles) {
       final s = (t['sentiment'] ?? '').toString().toUpperCase();
-      if (s.contains('POS')) counts['POSITIVE'] = counts['POSITIVE']! + 1;
-      else if (s.contains('NEG')) counts['NEGATIVE'] = counts['NEGATIVE']! + 1;
-      else counts['NEUTRAL'] = counts['NEUTRAL']! + 1;
+      if (s.contains('POS'))
+        counts['POSITIVE'] = counts['POSITIVE']! + 1;
+      else if (s.contains('NEG'))
+        counts['NEGATIVE'] = counts['NEGATIVE']! + 1;
+      else
+        counts['NEUTRAL'] = counts['NEUTRAL']! + 1;
     }
     return counts;
   }
 
-  Map<String, int> computeSentimentCountsFromContents(List<Map<String, dynamic>> contents) {
+  Map<String, int> computeSentimentCountsFromContents(
+    List<Map<String, dynamic>> contents,
+  ) {
     final counts = {'POSITIVE': 0, 'NEGATIVE': 0, 'NEUTRAL': 0};
     for (final c in contents) {
       final s = (c['sentiment'] ?? '').toString().toUpperCase();
-      if (s.contains('POS')) counts['POSITIVE'] = counts['POSITIVE']! + 1;
-      else if (s.contains('NEG')) counts['NEGATIVE'] = counts['NEGATIVE']! + 1;
-      else counts['NEUTRAL'] = counts['NEUTRAL']! + 1;
+      if (s.contains('POS'))
+        counts['POSITIVE'] = counts['POSITIVE']! + 1;
+      else if (s.contains('NEG'))
+        counts['NEGATIVE'] = counts['NEGATIVE']! + 1;
+      else
+        counts['NEUTRAL'] = counts['NEUTRAL']! + 1;
     }
     return counts;
   }

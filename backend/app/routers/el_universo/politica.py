@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Query, HTTPException
 from ...services.el_universo.politica_service import ElUniversoTecnologiaService
+from ...models.shared.title import TitlesResponse
 
 router = APIRouter(prefix="/eluniverso/tecnologia", tags=["El Universo Tecnologia"])
 service = ElUniversoTecnologiaService()
@@ -46,3 +47,19 @@ async def content_sentiment(num_pages: int = Query(1, ge=1, le=10)):
 async def keywords(num_pages: int = Query(1, ge=1, le=10)):
     result = service.keywords_by_sentiment(num_pages)
     return result
+
+@router.get("/economia/analysis")
+async def get_economia_detailed_analysis():
+    """Get detailed economics analysis with titles, quotes and sentiment"""
+    try:
+        return service.get_economia_detailed_analysis()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
+@router.get("/economia/titles", response_model=TitlesResponse)
+async def get_economia_titles():
+    """Get economics section titles with sentiment analysis"""
+    try:
+        return service.get_economia_titles()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
