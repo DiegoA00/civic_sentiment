@@ -233,6 +233,21 @@ class _DashboardPageState extends State<DashboardPage> {
             style: navButtonStyle,
             child: const Text('Primicias - Palabras'),
           ),
+          TextButton(
+            onPressed: () => _scrollTo(_elUniversoTitlesKey),
+            style: navButtonStyle,
+            child: const Text('El Universo - Titulares'),
+          ),
+          TextButton(
+            onPressed: () => _scrollTo(_elUniversoContentsKey),
+            style: navButtonStyle,
+            child: const Text('El Universo - Contenidos'),
+          ),
+          TextButton(
+            onPressed: () => _scrollTo(_elUniversoKeywordsKey),
+            style: navButtonStyle,
+            child: const Text('El Universo - Palabras'),
+          ),
         ],
       ),
       body: RefreshIndicator(
